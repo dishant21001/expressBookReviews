@@ -20,7 +20,7 @@ public_users.post("/register", async (req, res) => {
   return res.status(200).json({ message: "User registered successfully" });
 });
 
-// Get the book list available in the shop
+// Get the books list available in the shop
 public_users.get('/', async (req, res) => {
   try {
     const bookList = await new Promise((resolve) => resolve(books));
