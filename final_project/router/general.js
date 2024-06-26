@@ -5,9 +5,9 @@ let users = require("./auth_users").users;
 const public_users = express.Router();
 
 // Register a new user
-public_users.post("/register", (req, res) => {
+public_users.post("/register", async (req, res) => {
   const { username, password } = req.body;
-  
+
   if (!username || !password) {
     return res.status(400).json({ message: "Username and password are required" });
   }
@@ -21,55 +21,82 @@ public_users.post("/register", (req, res) => {
 });
 
 // Get the book list available in the shop
-public_users.get('/', function (req, res) {
-  return res.status(200).json(books);
+public_users.get('/', async (req, res) => {
+  try {
+    const bookList = await new Promise((resolve) => resolve(books));
+    return res.status(200).json(bookList);
+  } catch (error) {
+    return res.status(500).json({ message: "Error retrieving books", error });
+  }
 });
 
 // Get book details based on ISBN
-public_users.get('/isbn/:isbn', function (req, res) {
+public_users.get('/isbn/:isbn', async (req, res) => {
   const { isbn } = req.params;
-  const book = books[isbn];
-
-  if (book) {
+  try {
+    const book = await new Promise((resolve, reject) => {
+      if (books[isbn]) {
+        resolve(books[isbn]);
+      } else {
+        reject("Book not found");
+      }
+    });
     return res.status(200).json(book);
-  } else {
-    return res.status(404).json({ message: "Book not found" });
+  } catch (error) {
+    return res.status(404).json({ message: "Book not found", error });
   }
 });
 
 // Get book details based on author
-public_users.get('/author/:author', function (req, res) {
+public_users.get('/author/:author', async (req, res) => {
   const { author } = req.params;
-  const booksByAuthor = Object.values(books).filter(book => book.author.toLowerCase() === author.toLowerCase());
-
-  if (booksByAuthor.length > 0) {
-    return res.status(200).json(booksByAuthor);
-  } else {
-    return res.status(404).json({ message: "No books found by this author" });
+  try {
+    const booksByAuthor = await new Promise((resolve) => {
+      const result = Object.values(books).filter(book => book.author.toLowerCase() === author.toLowerCase());
+      resolve(result);
+    });
+    if (booksByAuthor.length > 0) {
+      return res.status(200).json(booksByAuthor);
+    } else {
+      throw new Error("No books found by this author");
+    }
+  } catch (error) {
+    return res.status(404).json({ message: "No books found by this author", error });
   }
 });
 
 // Get all books based on title
-public_users.get('/title/:title', function (req, res) {
+public_users.get('/title/:title', async (req, res) => {
   const { title } = req.params;
-  const booksByTitle = Object.values(books).filter(book => book.title.toLowerCase().includes(title.toLowerCase()));
-
-  if (booksByTitle.length > 0) {
-    return res.status(200).json(booksByTitle);
-  } else {
-    return res.status(404).json({ message: "No books found with this title" });
+  try {
+    const booksByTitle = await new Promise((resolve) => {
+      const result = Object.values(books).filter(book => book.title.toLowerCase().includes(title.toLowerCase()));
+      resolve(result);
+    });
+    if (booksByTitle.length > 0) {
+      return res.status(200).json(booksByTitle);
+    } else {
+      throw new Error("No books found with this title");
+    }
+  } catch (error) {
+    return res.status(404).json({ message: "No books found with this title", error });
   }
 });
 
 // Get book review
-public_users.get('/review/:isbn', function (req, res) {
+public_users.get('/review/:isbn', async (req, res) => {
   const { isbn } = req.params;
-  const book = books[isbn];
-
-  if (book && book.reviews) {
-    return res.status(200).json(book.reviews);
-  } else {
-    return res.status(404).json({ message: "No reviews found for this book" });
+  try {
+    const reviews = await new Promise((resolve, reject) => {
+      if (books[isbn] && books[isbn].reviews) {
+        resolve(books[isbn].reviews);
+      } else {
+        reject("No reviews found for this book");
+      }
+    });
+    return res.status(200).json(reviews);
+  } catch (error) {
+    return res.status(404).json({ message: "No reviews found for this book", error });
   }
 });
 
